@@ -10,6 +10,8 @@ import {
   Trace,
 } from "./errors/index.js";
 
+import * as utils from "./utils.js";
+
 export {
   Repository,
   RepositoryConstructorParams,
@@ -17,4 +19,5 @@ export {
   NoUpdateRowFoundError,
   NotFoundError,
   Trace,
+  utils,
 };

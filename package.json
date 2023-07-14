@@ -1,23 +1,36 @@
 {
   "name": "repo-abs-knex",
   "version": "1.0.0",
+  "private": true,
   "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "default": "./dist/utils.js"
+    }
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc --build tsconfig.json",
     "clean": "npx tsc --build --clean",
-    "rebuild": "npm run clean && npm run build"
+    "rebuild": "npm run clean && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.4.1",
     "typescript": "^5.1.6"
   },
   "peerDependencies": {
-    "knex": "^2.4.2"
+    "date-fns": "^2.30.0",
+    "knex": "^2.4.2",
+    "uuid": "^9.0.0"
   }
 }
