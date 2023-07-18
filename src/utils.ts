@@ -18,6 +18,17 @@ type ParseISO9075Option = {
   fractionalSecondDigits?: number,
 };
 
+/**
+ * Create or set a Date that its milliseconds is 0.
+ * @param {Date} [date] Optional. The date to be used, else new Date will be created.
+ * @returns {Date} The date with 0 milliseconds.
+ */
+export function createDateZeroizeMs(date?: Date): Date {
+  const d = date ? new Date(date.getTime()) : new Date();
+  d.setMilliseconds(0);
+  return d;
+};
+
 export function parseISO9075(datetime: string | Date, opt?: ParseISO9075Option): Date;
 export function parseISO9075(datetime?: string | Date | null, opt?: ParseISO9075Option): Date | null;
 export function parseISO9075(datetime?: string | Date | null, opt?: ParseISO9075Option): Date | null {
