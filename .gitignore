@@ -23,6 +23,7 @@ node_modules/
 temp
 logs
 dist
+tsconfig.tsbuildinfo
 
 # certificate
 **/*.crt
