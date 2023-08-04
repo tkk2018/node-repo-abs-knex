@@ -1,4 +1,3 @@
-
 import { Trace } from "./trace.js";
 
 export default class NotFoundError extends Error {
