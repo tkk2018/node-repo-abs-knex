@@ -177,3 +177,248 @@ export function binaryToUuidv1(uuid?: Buffer | null): string | null {
     return null;
   }
 };
+
+
+/**
+ * group1 = yyyy
+ * group2 = MM
+ * group3 = dd
+ * group4 = HH
+ * group5 = mm
+ * group6 = ss
+ * group7 = S...S
+ * group8 = XXX
+ *
+ * @see {@link https://date-fns.org/v2.30.0/docs/format}
+ * @see {@link https://stackoverflow.com/a/37563868}
+ * @see {@link https://stackoverflow.com/a/68826144}
+ */
+const regex_iso8601 = /^(\d{4})-(\d\d)-(\d\d)[T ]?(\d\d):(\d\d):(\d\d)\.?(\d+)?([+-]\d\d:\d\d|Z)?$/i
+
+type DatetimeToken = {
+  /**
+   * yyyy
+   * @example
+   * 2023
+   */
+  year: string,
+
+  /**
+   * MM, 1-12
+   */
+  month: string,
+
+  /**
+   * dd
+   * @example
+   * 1-31
+   */
+  day: string,
+
+  /**
+   * HH, 00-23
+   */
+  hour: string,
+
+  /**
+   * mm, 00-59
+   */
+  minute: string,
+
+  /**
+   * ss, 00-59
+   */
+  second: string,
+
+  /**
+   * S...S
+   */
+  millisecond: string,
+
+  /**
+   * XXX
+   * @example
+   * Z, +00:00, -01:00, +01:00
+   */
+  offset: string,
+};
+
+type OptionsFlags<Type> = {
+  [Property in keyof Type]: boolean;
+};
+
+type TokenizedDatetimeToStringOption = OptionsFlags<DatetimeToken> & {
+  date_delimiter: string;
+  date_time_delimiter: string;
+  time_delimiter: string;
+  millisecond_delimiter: string;
+  disallow_Z: "+" | "-";
+};
+
+type TokenizedDatetimeToDateOption = Pick<TokenizedDatetimeToStringOption, "year" | "month" | "day" | "date_delimiter">;
+
+type TokenizedDatetimeToTimeOption = Pick<TokenizedDatetimeToStringOption, "hour" | "minute" | "second" | "millisecond" | "time_delimiter" | "millisecond_delimiter">;
+
+const DEFAULT_TOKENIZED_DATE_FORMAT_OPTION = {
+  year: true,
+  month: true,
+  day: true,
+  date_delimiter: "-",
+} as const;
+
+const DEFAULT_TOKENIZED_TIME_FORMAT_OPTION = {
+  hour: true,
+  minute: true,
+  second: true,
+  millisecond: true,
+  time_delimiter: ":",
+  millisecond_delimiter: ".",
+} as const;
+
+class TokenizedDatetime {
+  /**
+   * yyyy
+   * @example
+   * 2023
+   */
+  year: string;
+
+  /**
+   * MM, 1-12
+   */
+  month: string;
+
+  /**
+   * dd
+   * @example
+   * 1-31
+   */
+  day: string;
+
+  /**
+   * HH, 00-23
+   */
+  hour: string;
+
+  /**
+   * mm, 00-59
+   */
+  minute: string;
+
+  /**
+   * ss, 00-59
+   */
+  second: string;
+
+  /**
+   * S...S
+   */
+  millisecond?: string;
+
+  /**
+   * XXX
+   * @example
+   * Z, +00:00, -01:00, +01:00
+   */
+  offset?: string;
+
+  constructor(token: DatetimeToken) {
+    this.year = token.year;
+    this.month = token.month;
+    this.day = token.day;
+    this.hour = token.hour;
+    this.minute = token.minute;
+    this.second = token.second;
+    this.millisecond = token.millisecond;
+    this.offset = token.offset;
+  }
+
+  toDate(option?: Partial<TokenizedDatetimeToDateOption>) {
+    const opt = Object.assign({}, DEFAULT_TOKENIZED_DATE_FORMAT_OPTION, option);
+    let date = "";
+    if (opt.year) {
+      date += this.year;
+      if (opt.month || opt.day) {
+        date += opt.date_delimiter;
+      }
+    }
+    if (opt.month) {
+      date += this.month;
+      if (opt.day) {
+        date += opt.date_delimiter;
+      }
+    }
+    if (opt.day) {
+      date += this.day;
+    }
+    return date;
+  }
+
+  toTime(option?: Partial<TokenizedDatetimeToTimeOption>) {
+    const opt = Object.assign({}, DEFAULT_TOKENIZED_TIME_FORMAT_OPTION, option);
+    let time = "";
+    if (opt.hour) {
+      time += this.hour;
+      if (opt.minute || opt.second) {
+        time += opt.time_delimiter;
+      }
+    }
+    if (opt.minute) {
+      time += this.minute;
+      if (opt.second) {
+        time += opt.time_delimiter;
+      }
+    }
+    if (opt.second) {
+      time += this.second;
+      if (opt.millisecond && this.millisecond) {
+        time += opt.millisecond_delimiter;
+        time += this.millisecond;
+      }
+    }
+    return time;
+  }
+
+  toString(option?: Partial<TokenizedDatetimeToStringOption>) {
+    const opt = Object.assign(
+      {},
+      DEFAULT_TOKENIZED_DATE_FORMAT_OPTION,
+      DEFAULT_TOKENIZED_TIME_FORMAT_OPTION,
+      {
+        date_time_delimiter: "T",
+        offset: true,
+      },
+      option,
+    );
+    const date = this.toDate(opt);
+    const time = this.toTime(opt);
+    let result = `${date}${opt.date_time_delimiter}${time}`;
+    if (opt.offset && this.offset) {
+      if (this.offset?.toUpperCase() === "Z" && opt.disallow_Z) {
+        result += opt.disallow_Z;
+        result += "00:00";
+      }
+      else {
+        result += this.offset;
+      }
+    }
+    return result;
+  }
+}
+
+export function tokenizeIso8601(str_date: string): TokenizedDatetime | null {
+  const tokens = regex_iso8601.exec(str_date);
+  if (!tokens) {
+    return null;
+  }
+  return new TokenizedDatetime({
+    year: tokens[1],
+    month: tokens[2],
+    day: tokens[3],
+    hour: tokens[4],
+    minute: tokens[5],
+    second: tokens[6],
+    millisecond: tokens[7],
+    offset: tokens[8],
+  });
+};
