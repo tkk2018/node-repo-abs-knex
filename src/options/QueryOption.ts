@@ -20,11 +20,11 @@ export interface QueryOption<T = any> {
 
 export type SelectOption<T = any> = QueryOption<T>;
 
-export type DeleteOption = Pick<QueryOption<never>, "trx"> & { readonly: false };
+export type DeleteOption = Pick<QueryOption<never>, "trx"> & { readonly?: never };
 
-export type InsertOption = DeleteOption;
+export type InsertOption = Pick<QueryOption<never>, "trx"> & { readonly?: never };
 
-export type UpdateOption = DeleteOption;
+export type UpdateOption = Pick<QueryOption<never>, "trx"> & { readonly?: never };
 
 /**
  * @param {boolean} after Indicate whether this process is after insert, update or delete.
@@ -42,13 +42,13 @@ export function createSelectForUpdateOption(trx: Knex.Transaction): QueryOption 
 };
 
 export function createInsertOption(trx?: Knex.Transaction): InsertOption {
-  return { readonly: false, trx };
+  return { trx };
 }
 
 export function createUpdateOption(trx?: Knex.Transaction): UpdateOption {
-  return { readonly: false, trx };
+  return { trx };
 };
 
 export function createDeleteOption(trx?: Knex.Transaction): DeleteOption {
-  return { readonly: false, trx };
+  return { trx };
 };
