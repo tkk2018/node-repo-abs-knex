@@ -1,6 +1,6 @@
 import { Trace } from "./trace.js";
 
-export default class NoUpdateRowFoundError extends Error {
+export class NoUpdateRowFoundError extends Error {
   resource_name: string;
   trace?: Trace;
 

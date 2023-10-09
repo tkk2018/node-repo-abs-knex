@@ -119,9 +119,10 @@ export function zonedTimeToUtc(origin: Date) {
 };
 
 /**
- * Similar to what utcToZonedTime(date: Date): Date are trying to do.
+ * Similar to what utcToZonedTime(date: Date): Date are trying to do. Be careful the format must be exact, if not will result NaN.
+ * For example, the input contain '.000Z', but the format only '.SSS'.
+ *
  * @see {@link https://stackoverflow.com/a/40768745 | source} and {@link https://date-fns.org/v2.30.0/docs/parse | date-fns.parse}
- * Be careful the format must be exact, if not will result NaN. For example, the input contain '.000Z', but the format only '.SSS'.
  */
 export function parseISO9075UtcToLocal(origin: string, format?: string): Date {
   return parse(`${origin}Z`, `${format ?? ISO9075_FORMAT}X`, new Date());
@@ -177,7 +178,6 @@ export function binaryToUuidv1(uuid?: Buffer | null): string | null {
     return null;
   }
 };
-
 
 /**
  * group1 = yyyy
@@ -243,6 +243,9 @@ type DatetimeToken = {
   offset: string,
 };
 
+/**
+ * Typescript utility type.
+ */
 type OptionsFlags<Type> = {
   [Property in keyof Type]: boolean;
 };
@@ -318,7 +321,7 @@ class TokenizedDatetime {
   /**
    * XXX
    * @example
-   * Z, +00:00, -01:00, +01:00
+   * Z, +00:00, -00:00, -01:00, +01:00
    */
   offset?: string;
 
@@ -333,7 +336,7 @@ class TokenizedDatetime {
     this.offset = token.offset;
   }
 
-  toDate(option?: Partial<TokenizedDatetimeToDateOption>) {
+  toDate(option?: Partial<TokenizedDatetimeToDateOption>): string {
     const opt = Object.assign({}, DEFAULT_TOKENIZED_DATE_FORMAT_OPTION, option);
     let date = "";
     if (opt.year) {
@@ -354,7 +357,7 @@ class TokenizedDatetime {
     return date;
   }
 
-  toTime(option?: Partial<TokenizedDatetimeToTimeOption>) {
+  toTime(option?: Partial<TokenizedDatetimeToTimeOption>): string {
     const opt = Object.assign({}, DEFAULT_TOKENIZED_TIME_FORMAT_OPTION, option);
     let time = "";
     if (opt.hour) {
@@ -379,7 +382,7 @@ class TokenizedDatetime {
     return time;
   }
 
-  toString(option?: Partial<TokenizedDatetimeToStringOption>) {
+  toString(option?: Partial<TokenizedDatetimeToStringOption>): string {
     const opt = Object.assign(
       {},
       DEFAULT_TOKENIZED_DATE_FORMAT_OPTION,
@@ -406,6 +409,9 @@ class TokenizedDatetime {
   }
 }
 
+/**
+ * Tokenize the ISO8601 formatted date.
+ */
 export function tokenizeIso8601(str_date: string): TokenizedDatetime | null {
   const tokens = regex_iso8601.exec(str_date);
   if (!tokens) {

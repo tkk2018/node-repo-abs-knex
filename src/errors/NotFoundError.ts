@@ -1,6 +1,6 @@
 import { Trace } from "./trace.js";
 
-export default class NotFoundError extends Error {
+export class NotFoundError extends Error {
   resource_name: string;
   trace?: Trace;
 
