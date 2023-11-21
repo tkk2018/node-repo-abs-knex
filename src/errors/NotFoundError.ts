@@ -1,10 +1,10 @@
 import { Trace } from "./trace.js";
 
-export class NotFoundError extends Error {
+export class NotFoundError<T extends Trace = Trace>  extends Error {
   resource_name: string;
-  trace?: Trace;
+  trace?: T;
 
-  constructor(resource_name: string, trace?: Trace) {
+  constructor(resource_name: string, trace?: T) {
     super();
     this.name = "NotFoundError";
     this.resource_name = resource_name;

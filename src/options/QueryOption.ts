@@ -16,6 +16,11 @@ export interface QueryOption<T = any> {
   order?: "asc" | "desc";
 
   order_by?: Extract<keyof T, string>;
+
+  /**
+   * Default to false.
+   */
+  disablePrependTableName?: boolean;
 };
 
 export type SelectOption<T = any> = QueryOption<T>;

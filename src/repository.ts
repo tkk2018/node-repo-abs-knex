@@ -39,7 +39,7 @@ export abstract class Repository<
       }
     }
     if (opt?.order && opt.order_by) {
-      qb.orderBy(this.prependTableName(table, opt.order_by), opt.order);
+      qb.orderBy(opt?.disablePrependTableName ? opt.order_by : this.prependTableName(table, opt.order_by), opt.order);
     }
     return qb;
   }
@@ -50,7 +50,7 @@ export abstract class Repository<
     opt?: QueryOption,
   ): Knex.QueryBuilder<T, { max: V }> {
     return this.qb<T>(table, opt)
-      .max(this.prependTableName(table, column), { as: "max" })
+      .max(opt?.disablePrependTableName ? column: this.prependTableName(table, column), { as: "max" })
       .first() as Knex.QueryBuilder<T, { max: V }>; // FIXME: type cast
   }
 
@@ -81,9 +81,9 @@ export abstract class Repository<
   protected qbCPaginate<T extends {} = TRecord, V = TResult>(
     table: TTable,
     id_column: Extract<keyof T, string>,
-    opt: QueryOption & CPaginationOption,
+    opt?: QueryOption & CPaginationOption,
   ): Knex.QueryBuilder<T, V> {
-    const page_size = opt?.page_size ? opt.page_size > 0 ? opt.page_size : 0 : 20; // default 20
+    const page_size = opt?.page_size ? opt.page_size > 0 ? opt.page_size : 0 : undefined;
     const order = opt?.order === "desc" ? "desc" : "asc"; // default asc
 
     let comparator = "";
@@ -98,8 +98,12 @@ export abstract class Repository<
     }
 
     return this.qb<T, V>(table, opt)
-      .where(this.prependTableName(table, id_column), comparator, cursor)
-      .orderBy(this.prependTableName(table, id_column), order)
-      .limit(page_size + 1);
+      .where(opt?.disablePrependTableName ? id_column : this.prependTableName(table, id_column), comparator, cursor)
+      .orderBy(opt?.disablePrependTableName ? id_column : this.prependTableName(table, id_column), order)
+      .modify((qb) => {
+        if (page_size) {
+          qb.limit(page_size + 1);
+        }
+      });
   }
 };
