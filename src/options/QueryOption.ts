@@ -19,6 +19,7 @@ export interface QueryOption<T = any> {
 
   /**
    * Default to false.
+   * @deprecated use the knex.ref(columnName).withScheme(tableName) instead.
    */
   disablePrependTableName?: boolean;
 };

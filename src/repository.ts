@@ -22,6 +22,9 @@ export abstract class Repository<
     this.dbreadonly = params.dbreadonly ?? params.dbmain;
   }
 
+  /**
+   * @deprecated use the knex.ref(columnName).withScheme(tableName) instead.
+   */
   private prependTableName(table: TTable, column: string): string {
     return `${table}.${column}`;
   }

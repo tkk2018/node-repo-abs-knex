@@ -12,15 +12,20 @@ export function isValidDate(value: any): value is Date {
 
 const ISO9075_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
-type ParseISO9075Option = {
-  utc?: boolean,
-  fractionDelimiter?: "." | string,
-  fractionalSecondDigits?: number,
+export type ParseISO9075Option = {
+  /**
+   * Indicate the iso9075 date is UTC.
+   */
+  utc?: boolean;
+
+  fractionDelimiter?: "." | string;
+
+  fractionalSecondDigits?: number;
 };
 
 /**
- * Create or set a Date that its milliseconds is 0.
- * @param {Date} [date] Optional. The date to be used, else new Date will be created.
+ * Creates or sets a `Date` object with milliseconds set to 0.
+ * @param {Date} [date] Optional. The date to be used; otherwise, a new `Date` will be created.
  * @returns {Date} The date with 0 milliseconds.
  */
 export function createDateZeroizeMs(date?: Date): Date {
@@ -29,6 +34,13 @@ export function createDateZeroizeMs(date?: Date): Date {
   return d;
 };
 
+/**
+ * Parse an ISO9075 date string into a Date object.
+ * Note that ISO9075 does not include timezone information.
+ * By default, this function uses the local timezone.
+ * However, if the input datetime is in UTC, set the 'utc' option to true.
+ * FIXME: shall we always ask the user to specific timezone?
+ */
 export function parseISO9075(datetime: string | Date, opt?: ParseISO9075Option): Date;
 export function parseISO9075(datetime?: string | Date | null, opt?: ParseISO9075Option): Date | null;
 export function parseISO9075(datetime?: string | Date | null, opt?: ParseISO9075Option): Date | null {
@@ -38,10 +50,14 @@ export function parseISO9075(datetime?: string | Date | null, opt?: ParseISO9075
   else if (datetime) {
     const milliseconds_format = opt?.fractionalSecondDigits ? "".padStart(opt.fractionalSecondDigits, "XXX") : "";
     const iso9075_format = `${ISO9075_FORMAT}${opt?.fractionalSecondDigits ? opt?.fractionDelimiter ? opt.fractionDelimiter : "." : ""}${milliseconds_format}`;
+
+    // cause the iso9075 doesn't has the timezone information.
     if (opt?.utc) {
+      // it is utc, parse it with specifically.
       return parseISO9075UtcToLocal(datetime, iso9075_format);
     }
     else {
+      // create a Date object using the local timezone.
       return parse(datetime, iso9075_format, new Date());
     }
   }
@@ -50,6 +66,9 @@ export function parseISO9075(datetime?: string | Date | null, opt?: ParseISO9075
   }
 };
 
+/**
+ * @param {boolean} utc Indicates whether the output should be in UTC.
+ */
 export function formatISO9075(datetime: string | Date, utc?: boolean): string;
 export function formatISO9075(datetime?: string | Date | null, utc?: boolean): string | null;
 
@@ -69,10 +88,17 @@ export function formatISO9075(datetime?: string | Date | null, utc?: boolean): s
 };
 
 /**
- * Generate a Date that use the UTC of the origin date as local.
- * Then its real UTC, getISOString() change also, according to its local date.
- * This useful for library like date-fns that use the local datetime to do
- * convertion but you actually want it to use UTC datetime.
+ * Create a `Date` object that uses the UTC time of the original date as the local time.
+ *
+ * For example, given new Date("2024-01-01T08:00:00"),
+ * - the local time is 2024-01-01 16:00:00
+ * - the utc time is 2024-01-01 08:00:00,
+ * After conversion,
+ * - the local time is 2024-01-01 08:00:00
+ * - the utc time is 2024-01-01 00:00:00.
+ *
+ * This is useful for libraries like date-fns that use the local datetime to do conversions,
+ * but you actually want them to use UTC datetime.
  * @see {@link https://stackoverflow.com/a/68567329 | Source}
  * @see {@link https://github.com/marnusw/date-fns-tz#zonedtimetoutc | Alternative}
  */
@@ -85,7 +111,7 @@ export function zonedTimeToUtc(origin: Date) {
     minute: "2-digit",
     second: "2-digit",
     fractionalSecondDigits: 3, // milliseconds, https://stackoverflow.com/a/65595011
-    hour12: false,
+    hourCycle: "h23",
     timeZone: "UTC",
   })
   .formatToParts(origin)
@@ -119,13 +145,17 @@ export function zonedTimeToUtc(origin: Date) {
 };
 
 /**
- * Similar to what utcToZonedTime(date: Date): Date are trying to do. Be careful the format must be exact, if not will result NaN.
- * For example, the input contain '.000Z', but the format only '.SSS'.
- *
+ * Create a new Date based on the UTC ISO9075 formated {@link date}.
+ * Be careful the format must be exact; otherwise, it will result in NaN.
+ * For example, if the input contain '.000Z', but the format specifies only '.SSS'.
+ * @param {string} date The date string. Note that it must not contain any timezone information, as the timezone info will be added internally.
+ * @param {string} format The format for parsing the string. Again, ensure it does not include timezone information, as it will be handled internally.
  * @see {@link https://stackoverflow.com/a/40768745 | source} and {@link https://date-fns.org/v2.30.0/docs/parse | date-fns.parse}
  */
-export function parseISO9075UtcToLocal(origin: string, format?: string): Date {
-  return parse(`${origin}Z`, `${format ?? ISO9075_FORMAT}X`, new Date());
+export function parseISO9075UtcToLocal(date: string, format?: string): Date {
+  // manually add the 'Z' to the original date string because ISO9075 doesn't specify timezone information.
+  // additionally, include the 'X' in the format to instruct dateFns on how to parse the string.
+  return parse(`${date}Z`, `${format ?? ISO9075_FORMAT}X`, new Date());
 }
 
 // https://github.com/odo-network/binary-uuid/blob/master/src/binary-uuid.ts
