@@ -4,6 +4,7 @@ import {
   isValid,
   parse,
 } from "date-fns";
+import { Knex } from "knex";
 import { v1 as uuidv1 } from "uuid";
 
 export function isValidDate(value: any): value is Date {
@@ -457,4 +458,188 @@ export function tokenizeIso8601(str_date: string): TokenizedDatetime | null {
     millisecond: tokens[7],
     offset: tokens[8],
   });
+};
+
+export type StrKey<T> = Extract<keyof T, string>;
+
+/**
+ * This is equal to `knex.raw("CAST(column as type) as alias")`.
+ */
+export function knexRawTypeCast<
+  TTable extends Knex.TableNames,
+  TResult,
+  TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
+  RawTResult = TResult
+>(knex: Knex, column: `${TTable}.${TKey}`, type: string, alias: StrKey<TResult> & TKey): Knex.Raw<RawTResult>;
+
+/**
+ * This is equal to `knex.raw("CAST(column as type) as alias")`.
+ */
+export function knexRawTypeCast<
+  TAliase extends string,
+  TRecord,
+  TResult,
+  TKey extends StrKey<TRecord> = StrKey<TRecord>,
+  RawTResult = TResult
+>(knex: Knex, column: `${TAliase}.${TKey}`, type: string, alias: StrKey<TResult> & TKey): Knex.Raw<RawTResult>;
+
+/**
+ * This is equal to `knex.raw("CAST(column as type) as alias")`.
+ */
+export function knexRawTypeCast<
+  TResult,
+  RawTResult = TResult
+>(knex: Knex, column: string, type: string, alias: string): Knex.Raw<RawTResult> {
+  let sql = `CAST(?? as ${type})`;
+  const binding: Knex.RawBinding[] = [column];
+  if (alias) {
+    sql += ` as ??`;
+    binding.push(alias);
+  }
+  return knex.raw<RawTResult>(sql, binding);
+}
+
+/**
+ * This is equal to the `knex.ref(column_name).withSchema(tablename)` which will generate `${tablename}.${column_name}`.
+ * @param {Knex} knex The knex instance.
+ * @param {string} tablename The table name.
+ * @param {TSrc} column_name The column name.
+ */
+export function knexRefWithSchema<
+  TTable extends Knex.TableNames,
+  TResult = Knex.TableType<TTable>,
+  TSrc extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> & StrKey<TResult> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> & StrKey<TResult>,
+>(
+  knex: Knex,
+  tablename: TTable,
+  column_name: TSrc,
+): Knex.Ref<TSrc, { [K in TSrc]: TSrc }>;
+
+/**
+ * This is equal to the `knex.ref(column_name).withSchema(tablename)` which will generate `${tablename}.${column_name}`.
+ * @param {Knex} knex The knex instance.
+ * @param {string} tablename Expecially for derived table which using alias name.
+ * @param {TSrc} column_name The column name.
+ */
+export function knexRefWithSchema<
+  TRecord extends {},
+  TResult = TRecord,
+  TSrc extends StrKey<TRecord> & StrKey<TResult> = StrKey<TRecord> & StrKey<TResult>,
+>(
+  knex: Knex,
+  tablename: string,
+  column_name: TSrc,
+): Knex.Ref<TSrc, { [K in TSrc]: TSrc }>;
+
+/**
+ * This is equal to the `knex.ref(column_name).withSchema(tablename)` which will generate `${tablename}.${column_name}`.
+ */
+export function knexRefWithSchema<
+  TRecord extends {},
+  TResult = TRecord,
+  TSrc extends StrKey<TRecord> & StrKey<TResult> = StrKey<TRecord> & StrKey<TResult>,
+>(
+  knex: Knex,
+  tablename: string,
+  column_name: TSrc,
+): Knex.Ref<TSrc, { [K in TSrc]: TSrc }> {
+  return knex.ref<TSrc>(column_name).withSchema(tablename);
+};
+
+/**
+ * This is equal to the `knex.ref(column_name).withSchema(tablename).as(alias)` which will generate `${tablename}.${column_name} as ${alias}`.
+ */
+export function knexRefWithSchemaAs<
+  TTable extends Knex.TableNames,
+  TResult,
+  TSrc extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
+  TAliase extends StrKey<TResult> = StrKey<TResult>,
+>(
+  knex: Knex,
+  tablename: TTable,
+  column_name: TSrc,
+  alias: TAliase,
+): Knex.Ref<TSrc, { [K in TAliase]: TSrc }> {
+  return knex.ref<TSrc>(column_name).withSchema(tablename).as<TAliase>(alias);
+};
+
+/**
+ * This is equal to `knex.raw("value as column_name")`.
+ */
+export function knexRawExtraValueAs<
+  TResult,
+  TKey extends StrKey<TResult>,
+  RawTResult = TResult
+>(knex: Knex, value: TResult[TKey], alias: TKey): Knex.Raw<RawTResult> {
+  return knex.raw<RawTResult>("? as ??", [value, alias]);
+};
+
+/**
+ * This is equal to the `knex.raw("BIN_TO_UUID(column, swap_flag) as alias")`.
+ */
+export function knexRawBinaryToUuid<
+  TTable extends Knex.TableNames,
+  TResult,
+  TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
+  RawTResult = TResult
+>(knex: Knex, column: `${TTable}.${TKey}`, alias?: StrKey<TResult>, swap_flag: 0 | 1 = 0): Knex.Raw<RawTResult> {
+  let sql = "BIN_TO_UUID(??, ?)";
+  const binding: Knex.RawBinding[] = [column, swap_flag];
+  if (alias) {
+    sql += " as ??";
+    binding.push(alias);
+  }
+  return knex.raw<RawTResult>(sql, binding);
+};
+
+/**
+ * Concat date string and time string columns and then convert it to unixtimestamp.
+ * @param {Knex} knex The knex instance.
+ * @param {string} date The column name of date.
+ * @param {string} time The column name of time.
+ * @param {string} format The format of the `${date}${time}`.
+ * @param {string} [alias] With alias.
+ */
+export function knexRawStrDateTimeToUnixtimestamp<
+  TTable extends Knex.TableNames,
+  TResult = any,
+  TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
+>(knex: Knex, date: `${TTable}.${TKey}`, time: `${TTable}.${TKey}`, format: string, alias?: StrKey<TResult>): Knex.Raw<TResult> {
+  let sql = `UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(??, ??), ?))`;
+  const binding: Knex.RawBinding[] = [date, time, format];
+  if (alias) {
+    sql += " as ??";
+    binding.push(alias);
+  }
+  return knex.raw<TResult>(sql, binding);
+};
+
+declare module 'knex' {
+  namespace Knex {
+    interface JoinClause {
+      on<
+        TTable1 extends Knex.TableNames,
+        TTable2 extends Knex.TableNames,
+        TKey1 extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable1>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable1>>>,
+        TKey2 extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable2>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable2>>>
+      >(column1: `${TTable1}.${TKey1}`, operator: string, column2: `${TTable2}.${TKey2}`): Knex.JoinClause;
+
+      on<
+        TTable1 extends Knex.TableNames,
+        TTable2 extends string,
+        TRecord2 extends {},
+        TKey1 extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable1>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable1>>>,
+        TKey2 extends StrKey<TRecord2> = StrKey<TRecord2>
+      >(column1: `${TTable1}.${TKey1}`, operator: string, column2: `${TTable2}.${TKey2}`): Knex.JoinClause;
+
+      on<
+        TTable1 extends string,
+        TRecord1 extends {},
+        TTable2 extends string,
+        TRecord2 extends {},
+        TKey1 extends StrKey<TRecord1> = StrKey<TRecord1>,
+        TKey2 extends StrKey<TRecord2> = StrKey<TRecord2>
+      >(column1: `${TTable1}.${TKey1}`, operator: string, column2: `${TTable2}.${TKey2}`): Knex.JoinClause;
+    }
+  }
 };
