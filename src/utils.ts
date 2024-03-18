@@ -467,7 +467,7 @@ export type StrKey<T> = Extract<keyof T, string>;
  */
 export function knexRawTypeCast<
   TTable extends Knex.TableNames,
-  TResult,
+  TResult = Knex.TableType<TTable>,
   TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
   RawTResult = TResult
 >(knex: Knex, column: `${TTable}.${TKey}`, type: string, alias: StrKey<TResult> & TKey): Knex.Raw<RawTResult>;
