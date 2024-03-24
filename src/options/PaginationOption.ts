@@ -1,4 +1,4 @@
 export interface CPaginationOption {
-  page_size?: number,
-  start_id?: string,
+  page_size?: number | null,
+  start_id?: string | null,
 };

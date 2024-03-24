@@ -90,7 +90,7 @@ export abstract class Repository<
     const order = opt?.order === "desc" ? "desc" : "asc"; // default asc
 
     let comparator = "";
-    let cursor: string | Knex.QueryBuilder | undefined = opt?.start_id;
+    let cursor: string | Knex.QueryBuilder | undefined | null = opt?.start_id;
     if (order === "asc") {
       comparator = ">=";
       cursor ??= "1";

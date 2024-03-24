@@ -614,6 +614,14 @@ export function knexRawStrDateTimeToUnixtimestamp<
   return knex.raw<TResult>(sql, binding);
 };
 
+export function safeColumnName<
+  TTable extends string,
+  TRecord extends {},
+  TKey extends StrKey<TRecord> = StrKey<TRecord>,
+>(column_name: `${TTable}.${TKey}`): `${TTable}.${TKey}` {
+  return column_name;
+};
+
 declare module 'knex' {
   namespace Knex {
     interface JoinClause {
