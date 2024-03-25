@@ -5,6 +5,8 @@ import {
   parse,
 } from "date-fns";
 import { Knex } from "knex";
+import { OkPacket } from "mysql";
+import { ResultSetHeader } from "mysql2";
 import { v1 as uuidv1 } from "uuid";
 
 export function isValidDate(value: any): value is Date {
@@ -620,6 +622,67 @@ export function safeColumnName<
   TKey extends StrKey<TRecord> = StrKey<TRecord>,
 >(column_name: `${TTable}.${TKey}`): `${TTable}.${TKey}` {
   return column_name;
+};
+
+/**
+ * Due to the `knex(tableName).insert(data).onConflict().merge(merge)` using the deprecated way to construct the query, see this {@link https://github.com/knex/knex/issues/4990 | issue} and this {@link https://stackoverflow.com/a/63609645/16027098 | question} for more details.
+ * This creates the raw query by using the standard way, as taking from {@link https://stackoverflow.com/a/45063055/16027098 | here}.
+ *
+ * For `insertOrIgnoreIfDuplicate`, simply put the unique key name in the {@link merge} parameter. Because of the unique key value doesn't change, therefore, no updates occur. More details can be found {@link https://stackoverflow.com/a/548570/16027098 | here}.
+ *
+ * Note that `INSERT ... ON DUPLICATE KEY UPDATE` will cause the auto-increment key to increase no matter whether it is inserted or updated. See the {@link https://dev.mysql.com/doc/refman/8.3/en/insert-on-duplicate.html | offical explanation} for more details.
+ *
+ * Additionally, regarding affected rows:
+ * - If a new row is inserted, the affected row count is 1.
+ * - If an existing row is updated, the affected row count is 2.
+ * - If no changes occur (existing row remains unchanged), the affected row count is 0.
+ */
+export function knexMySqlInsertOrUpdate<
+  TTable extends Knex.TableNames,
+  TResult extends OkPacket[] | ResultSetHeader[] = OkPacket[] | ResultSetHeader[],
+  TRecord extends Partial<Knex.ResolveTableType<Knex.TableType<TTable>>> = Partial<Knex.ResolveTableType<Knex.TableType<TTable>>>,
+>(knex: Knex, tableName: TTable, data: TRecord | TRecord[], merge?: StrKey<TRecord>[] | undefined, alias?: string): Knex.Raw<TResult>;
+
+/**
+ * Due to the `knex(tableName).insert(data).onConflict().merge(merge)` using the deprecated way to construct the query, see this {@link https://github.com/knex/knex/issues/4990 | issue} and this {@link https://stackoverflow.com/a/63609645/16027098 | question} for more details.
+ * This creates the raw query by using the standard way, as taking from {@link https://stackoverflow.com/a/45063055/16027098 | here}.
+ *
+ * For `insertOrIgnoreIfDuplicate`, simply put the unique key name in the {@link merge} parameter. Because of the unique key value doesn't change, therefore, no updates occur. More details can be found {@link https://stackoverflow.com/a/548570/16027098 | here}.
+ *
+ * Note that `INSERT ... ON DUPLICATE KEY UPDATE` will cause the auto-increment key to increase no matter whether it is inserted or updated. See the {@link https://dev.mysql.com/doc/refman/8.3/en/insert-on-duplicate.html | offical explanation} for more details.
+ *
+ * Additionally, regarding affected rows:
+ * - If a new row is inserted, the affected row count is 1.
+ * - If an existing row is updated, the affected row count is 2.
+ * - If no changes occur (existing row remains unchanged), the affected row count is 0.
+ */
+export function knexMySqlInsertOrUpdate<
+  TRecord extends {},
+  TResult extends OkPacket[] | ResultSetHeader[] = OkPacket[] | ResultSetHeader[],
+>(knex: Knex, tableName: string, data: TRecord | TRecord[], merge?: StrKey<TRecord>[] | undefined, alias?: string): Knex.Raw<TResult>;
+
+/**
+ * Due to the `knex(tableName).insert(data).onConflict().merge(merge)` using the deprecated way to construct the query, see this {@link https://github.com/knex/knex/issues/4990 | issue} and this {@link https://stackoverflow.com/a/63609645/16027098 | question} for more details.
+ * This creates the raw query by using the standard way, as taking from {@link https://stackoverflow.com/a/45063055/16027098 | here}.
+ *
+ * For `insertOrIgnoreIfDuplicate`, simply put the unique key name in the {@link merge} parameter. Because of the unique key value doesn't change, therefore, no updates occur. More details can be found {@link https://stackoverflow.com/a/548570/16027098 | here}.
+ *
+ * Note that `INSERT ... ON DUPLICATE KEY UPDATE` will cause the auto-increment key to increase no matter whether it is inserted or updated. See the {@link https://dev.mysql.com/doc/refman/8.3/en/insert-on-duplicate.html | offical explanation} for more details.
+ *
+ * Additionally, regarding affected rows:
+ * - If a new row is inserted, the affected row count is 1.
+ * - If an existing row is updated, the affected row count is 2.
+ * - If no changes occur (existing row remains unchanged), the affected row count is 0.
+ */
+export function knexMySqlInsertOrUpdate<
+  TRecord extends {},
+  TResult = OkPacket[] | ResultSetHeader[]
+>(knex: Knex, tableName: string, data: TRecord | TRecord[], merge: StrKey<TRecord>[] | undefined = undefined, alias: string = "new_value"): Knex.Raw<TResult> {
+  const firstData = Array.isArray(data) ? data[0] : data;
+  const propertyNames = merge ?? Object.getOwnPropertyNames(firstData);
+  return knex.raw(knex(tableName).insert(data).toQuery() + ` AS \`${alias}\` ON DUPLICATE KEY UPDATE ` +
+    propertyNames.map((field) => `${field}=${alias}.${field}`).join(", ")
+  );
 };
 
 declare module 'knex' {
