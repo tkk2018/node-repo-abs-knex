@@ -56,7 +56,7 @@ export abstract class Repository<
   }
 
   /**
-   * Cursor-based pagination.
+   * Cursor-based pagination. By default, this will return `${page_size + 1}` of data.
    *
    * @param table The name of table.
    * @param id_column The primary column name.
@@ -82,7 +82,7 @@ export abstract class Repository<
   protected qbCPaginate<T extends {} = TRecord, V = TResult>(
     table: TTable,
     id_column: Extract<keyof T, string>,
-    opt?: SelectOption & CPaginationOption & { disablePrependTableName?: boolean },
+    opt?: SelectOption & CPaginationOption & { disablePrependTableName?: boolean; disablePageSizePlusOne?: boolean },
   ): Knex.QueryBuilder<T, V> {
     const page_size = opt?.page_size ? opt.page_size > 0 ? opt.page_size : 0 : undefined;
     const order = opt?.order === "desc" ? "desc" : "asc"; // default asc
@@ -103,7 +103,8 @@ export abstract class Repository<
       .orderBy(opt?.disablePrependTableName ? id_column : this.prependTableName(table, id_column), order)
       .modify((qb) => {
         if (page_size) {
-          qb.limit(page_size + 1);
+          const extra = opt?.disablePageSizePlusOne ? 0 : 1;
+          qb.limit(page_size + extra);
         }
       });
   }
