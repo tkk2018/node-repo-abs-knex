@@ -20,7 +20,7 @@ export interface BaseSelectOption<T = any> {
   order_by?: Extract<keyof T, string> | null;
 }
 
-export type SelectOption<T = any> = QueryOption & BaseSelectOption<T>;
+export interface SelectOption<T = any> extends BaseSelectOption<T>, QueryOption {};
 
 export type DeleteOption = Pick<QueryOption, "trx"> & { readonly?: never };
 
