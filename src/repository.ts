@@ -2,6 +2,7 @@ import { Knex } from "knex";
 import {
   CPaginationOption,
   QueryOption,
+  SelectOption,
 } from "./index.js";
 
 export interface RepositoryConstructorParams<TRecord extends {} = any, TResult = any[]> {
@@ -22,9 +23,6 @@ export abstract class Repository<
     this.dbreadonly = params.dbreadonly ?? params.dbmain;
   }
 
-  /**
-   * @deprecated use the knex.ref(columnName).withScheme(tableName) instead.
-   */
   private prependTableName(table: TTable, column: string): string {
     return `${table}.${column}`;
   }
@@ -33,7 +31,7 @@ export abstract class Repository<
     return opt?.readonly ? this.dbreadonly : this.dbmain;
   }
 
-  protected qb<T extends {} = TRecord, V = TResult>(table: TTable, opt?: QueryOption): Knex.QueryBuilder<T, V> {
+  protected qb<T extends {} = TRecord, V = TResult>(table: TTable, opt?: SelectOption & { disablePrependTableName?: boolean }): Knex.QueryBuilder<T, V> {
     const qb = this.db(opt)<T, V>(table);
     if (opt?.trx) {
       qb.transacting(opt.trx);
@@ -50,7 +48,7 @@ export abstract class Repository<
   qbMax<T extends {} = TRecord, V = any>(
     table: TTable,
     column: Extract<keyof T, string>,
-    opt?: QueryOption,
+    opt?: SelectOption & { disablePrependTableName?: boolean },
   ): Knex.QueryBuilder<T, { max: V }> {
     return this.qb<T>(table, opt)
       .max(opt?.disablePrependTableName ? column: this.prependTableName(table, column), { as: "max" })
@@ -84,7 +82,7 @@ export abstract class Repository<
   protected qbCPaginate<T extends {} = TRecord, V = TResult>(
     table: TTable,
     id_column: Extract<keyof T, string>,
-    opt?: QueryOption & CPaginationOption,
+    opt?: SelectOption & CPaginationOption & { disablePrependTableName?: boolean },
   ): Knex.QueryBuilder<T, V> {
     const page_size = opt?.page_size ? opt.page_size > 0 ? opt.page_size : 0 : undefined;
     const order = opt?.order === "desc" ? "desc" : "asc"; // default asc
