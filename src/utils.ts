@@ -603,6 +603,35 @@ export function knexRawBinaryToUuid<
  * @param {string} [alias] With alias.
  */
 export function knexRawStrDateTimeToUnixtimestamp<
+  TTable extends string,
+  TRecord extends {},
+  TResult = any,
+  TKey extends StrKey<TRecord> = StrKey<TRecord>,
+>(knex: Knex, date: `${TTable}.${TKey}`, time: `${TTable}.${TKey}`, format: string, alias?: StrKey<TResult>): Knex.Raw<TResult>;
+
+/**
+ * Concat date string and time string columns and then convert it to unixtimestamp.
+ * @param {Knex} knex The knex instance.
+ * @param {string} date The column name of date.
+ * @param {string} time The column name of time.
+ * @param {string} format The format of the `${date}${time}`.
+ * @param {string} [alias] With alias.
+ */
+export function knexRawStrDateTimeToUnixtimestamp<
+  TTable extends Knex.TableNames,
+  TResult = any,
+  TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
+>(knex: Knex, date: `${TTable}.${TKey}`, time: `${TTable}.${TKey}`, format: string, alias?: StrKey<TResult>): Knex.Raw<TResult>;
+
+/**
+ * Concat date string and time string columns and then convert it to unixtimestamp.
+ * @param {Knex} knex The knex instance.
+ * @param {string} date The column name of date.
+ * @param {string} time The column name of time.
+ * @param {string} format The format of the `${date}${time}`.
+ * @param {string} [alias] With alias.
+ */
+export function knexRawStrDateTimeToUnixtimestamp<
   TTable extends Knex.TableNames,
   TResult = any,
   TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
@@ -711,6 +740,10 @@ declare module 'knex' {
         TKey1 extends StrKey<TRecord1> = StrKey<TRecord1>,
         TKey2 extends StrKey<TRecord2> = StrKey<TRecord2>
       >(column1: `${TTable1}.${TKey1}`, operator: string, column2: `${TTable2}.${TKey2}`): Knex.JoinClause;
+
+      on<TResult = any>(column1: Knex.Raw<TResult>, operator: string, column2: string): Knex.JoinClause;
+      on<TResult = any>(column1: string, operator: string, column2: Knex.Raw<TResult>): Knex.JoinClause;
+      on<TResult = any>(column1: Knex.Raw<TResult>, operator: string, column2: Knex.Raw<TResult>): Knex.JoinClause;
     }
   }
 };
