@@ -600,49 +600,93 @@ export function knexRawBinaryToUuid<
  * @param {string} date The column name of date.
  * @param {string} time The column name of time.
  * @param {string} format The format of the `${date}${time}`.
- * @param {string} [alias] With alias.
+ * @param {object} [potion]
+ * @param {string} [option.from_tz] The timezone of the datetime string.
+ * @param {string} [option.alias] With alias.
  */
 export function knexRawStrDateTimeToUnixtimestamp<
   TTable extends string,
   TRecord extends {},
-  TResult = any,
+  TResult extends {} = any,
+  TRawResult = TResult,
   TKey extends StrKey<TRecord> = StrKey<TRecord>,
->(knex: Knex, date: `${TTable}.${TKey}`, time: `${TTable}.${TKey}`, format: string, alias?: StrKey<TResult>): Knex.Raw<TResult>;
-
-/**
- * Concat date string and time string columns and then convert it to unixtimestamp.
- * @param {Knex} knex The knex instance.
- * @param {string} date The column name of date.
- * @param {string} time The column name of time.
- * @param {string} format The format of the `${date}${time}`.
- * @param {string} [alias] With alias.
- */
-export function knexRawStrDateTimeToUnixtimestamp<
-  TTable extends Knex.TableNames,
-  TResult = any,
-  TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
->(knex: Knex, date: `${TTable}.${TKey}`, time: `${TTable}.${TKey}`, format: string, alias?: StrKey<TResult>): Knex.Raw<TResult>;
-
-/**
- * Concat date string and time string columns and then convert it to unixtimestamp.
- * @param {Knex} knex The knex instance.
- * @param {string} date The column name of date.
- * @param {string} time The column name of time.
- * @param {string} format The format of the `${date}${time}`.
- * @param {string} [alias] With alias.
- */
-export function knexRawStrDateTimeToUnixtimestamp<
-  TTable extends Knex.TableNames,
-  TResult = any,
-  TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
->(knex: Knex, date: `${TTable}.${TKey}`, time: `${TTable}.${TKey}`, format: string, alias?: StrKey<TResult>): Knex.Raw<TResult> {
-  let sql = `UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(??, ??), ?))`;
-  const binding: Knex.RawBinding[] = [date, time, format];
-  if (alias) {
-    sql += " as ??";
-    binding.push(alias);
+>(
+  knex: Knex,
+  date: `${TTable}.${TKey}`,
+  time: `${TTable}.${TKey}`,
+  format: string,
+  option?: {
+    from_tz?: string,
+    alias?: string,
   }
-  return knex.raw<TResult>(sql, binding);
+): Knex.Raw<TRawResult>;
+
+/**
+ * Concat date string and time string columns and then convert it to unixtimestamp.
+ * @param {Knex} knex The knex instance.
+ * @param {string} date The column name of date.
+ * @param {string} time The column name of time.
+ * @param {string} format The format of the `${date}${time}`.
+ * @param {object} [potion]
+ * @param {string} [option.from_tz] The timezone of the datetime string.
+ * @param {string} [option.alias] With alias.
+ */
+export function knexRawStrDateTimeToUnixtimestamp<
+  TTable extends Knex.TableNames,
+  TRawResult = any,
+  TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
+>(
+  knex: Knex,
+  date: `${TTable}.${TKey}`,
+  time: `${TTable}.${TKey}`,
+  format: string,
+  option?: {
+    from_tz?: string,
+    alias?: string,
+  }
+): Knex.Raw<TRawResult>;
+
+/**
+ * Concat date string and time string columns and then convert it to unixtimestamp.
+ * @param {Knex} knex The knex instance.
+ * @param {string} date The column name of date.
+ * @param {string} time The column name of time.
+ * @param {string} format The format of the `${date}${time}`.
+ * @param {object} [potion]
+ * @param {string} [option.from_tz] The timezone of the datetime string.
+ * @param {string} [option.alias] With alias.
+ */
+export function knexRawStrDateTimeToUnixtimestamp<
+  TTable extends Knex.TableNames,
+  TRawResult = any,
+  TKey extends StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>> = StrKey<Knex.ResolveTableType<Knex.TableType<TTable>>>,
+>(
+  knex: Knex,
+  date: `${TTable}.${TKey}`,
+  time: `${TTable}.${TKey}`,
+  format: string,
+  option?: {
+    from_tz?: string,
+    alias?: string,
+  }
+): Knex.Raw<TRawResult> {
+  let sql = `STR_TO_DATE(CONCAT(??, ??), ?)`;
+  const binding: Knex.RawBinding[] = [date, time, format];
+
+  if (option?.from_tz) {
+    // https://stackoverflow.com/a/19069310/16027098
+    sql = `CONVERT_TZ(${sql}, ?, @@session.time_zone)`;
+    binding.push(option.from_tz);
+  }
+
+  sql = `UNIX_TIMESTAMP(${sql})`;
+
+  if (option?.alias) {
+    sql += " as ??";
+    binding.push(option.alias);
+  }
+
+  return knex.raw<TRawResult>(sql, binding);
 };
 
 export function safeColumnName<
