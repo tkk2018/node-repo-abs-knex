@@ -516,8 +516,8 @@ export function knexRawTypeCast<
  */
 export function knexRefWithSchema<
   TTable extends Knex.TableNames,
-  TResult = Knex.TableType<TTable>,
-  TSrc extends TableColumnName<TTable> & StrKey<TResult> = TableColumnName<TTable> & StrKey<TResult>,
+  TResult,
+  TSrc extends TableColumnName<TTable> & StrKey<TResult>,
 >(
   knex: Knex,
   tablename: TTable,
@@ -561,8 +561,8 @@ export function knexRefWithSchema<
 export function knexRefWithSchemaAs<
   TTable extends Knex.TableNames,
   TResult,
-  TSrc extends TableColumnName<TTable> = TableColumnName<TTable>,
-  TAliase extends StrKey<TResult> = StrKey<TResult>,
+  TSrc extends TableColumnName<TTable>,
+  TAliase extends StrKey<TResult>,
 >(
   knex: Knex,
   tablename: TTable,
