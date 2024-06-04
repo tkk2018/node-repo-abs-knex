@@ -459,3 +459,22 @@ export function tokenizeIso8601(str_date: string): TokenizedDatetime | null {
     offset: tokens[8],
   });
 };
+
+export function sanitizeObject<
+  Expect extends object,
+  Input extends Expect = Expect
+>(
+  input: Input,
+  keys: Extract<keyof Expect, string>[] | readonly Extract<keyof Expect, string>[]
+): {
+  [K in keyof Expect]: Expect[K]
+} {
+  return (Object.keys(input) as Array<Extract<keyof Expect, string>>)
+    .filter(key => keys.includes(key))
+    .reduce((acc, key) => {
+      // https://stackoverflow.com/q/61948250
+      const input_value = input[key];
+      (acc[key] as typeof input_value) = input[key];
+      return acc;
+    }, {} as Expect);
+};

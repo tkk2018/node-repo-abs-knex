@@ -155,7 +155,7 @@ export function knexRawBinaryToUuid<
  * @param {string} date The column name of date.
  * @param {string} time The column name of time.
  * @param {string} format The format of the `${date}${time}`.
- * @param {object} [potion]
+ * @param {object} [option]
  * @param {string} [option.from_tz] The timezone of the datetime string.
  * @param {string} [option.alias] With alias.
  */
@@ -182,7 +182,7 @@ export function knexRawStrDateTimeToUnixtimestamp<
  * @param {string} date The column name of date.
  * @param {string} time The column name of time.
  * @param {string} format The format of the `${date}${time}`.
- * @param {object} [potion]
+ * @param {object} [option]
  * @param {string} [option.from_tz] The timezone of the datetime string.
  * @param {string} [option.alias] With alias.
  */
@@ -207,7 +207,7 @@ export function knexRawStrDateTimeToUnixtimestamp<
  * @param {string} date The column name of date.
  * @param {string} time The column name of time.
  * @param {string} format The format of the `${date}${time}`.
- * @param {object} [potion]
+ * @param {object} [option]
  * @param {string} [option.from_tz] The timezone of the datetime string.
  * @param {string} [option.alias] With alias.
  */
