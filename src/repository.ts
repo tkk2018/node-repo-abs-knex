@@ -31,6 +31,15 @@ export abstract class Repository<
     return opt?.readonly ? this.dbreadonly : this.dbmain;
   }
 
+  protected qb<
+    T extends Knex.TableNames,
+    TRecord extends Partial<Knex.ResolveTableType<Knex.TableType<T>>> = Partial<Knex.ResolveTableType<Knex.TableType<T>>>,
+    V = TRecord
+  >(
+    table: T,
+    opt?: SelectOption & { disablePrependTableName?: boolean },
+  ): Knex.QueryBuilder<T, V>;
+  protected qb<T extends {} = TRecord, V = TResult>(table: TTable, opt?: SelectOption & { disablePrependTableName?: boolean }): Knex.QueryBuilder<T, V>;
   protected qb<T extends {} = TRecord, V = TResult>(table: TTable, opt?: SelectOption & { disablePrependTableName?: boolean }): Knex.QueryBuilder<T, V> {
     const qb = this.db(opt)<T, V>(table);
     if (opt?.trx) {
