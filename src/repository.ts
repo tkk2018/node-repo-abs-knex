@@ -32,13 +32,13 @@ export abstract class Repository<
   }
 
   protected qb<
-    T extends Knex.TableNames,
-    TRecord extends Partial<Knex.ResolveTableType<Knex.TableType<T>>> = Partial<Knex.ResolveTableType<Knex.TableType<T>>>,
-    V = TRecord
+    TTable extends Knex.TableNames,
+    TRecord extends Knex.ResolveTableType<Knex.TableType<TTable>> = Knex.ResolveTableType<Knex.TableType<TTable>>,
+    TResult = TRecord[],
   >(
-    table: T,
+    table: TTable,
     opt?: SelectOption & { disablePrependTableName?: boolean },
-  ): Knex.QueryBuilder<T, V>;
+  ): Knex.QueryBuilder<TRecord, TResult>;
   protected qb<T extends {} = TRecord, V = TResult>(table: TTable, opt?: SelectOption & { disablePrependTableName?: boolean }): Knex.QueryBuilder<T, V>;
   protected qb<T extends {} = TRecord, V = TResult>(table: TTable, opt?: SelectOption & { disablePrependTableName?: boolean }): Knex.QueryBuilder<T, V> {
     const qb = this.db(opt)<T, V>(table);

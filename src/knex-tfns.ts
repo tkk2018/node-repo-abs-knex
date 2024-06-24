@@ -54,7 +54,7 @@ export function knexRawTypeCast<
     binding.push(alias);
   }
   return knex.raw<RawTResult>(sql, binding);
-}
+};
 
 /**
  * This is equal to the `knex.ref(column_name).withSchema(tablename)` which will generate `${tablename}.${column_name}`.

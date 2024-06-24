@@ -478,3 +478,69 @@ export function sanitizeObject<
       return acc;
     }, {} as Expect);
 };
+
+/**
+ * @see {@link https://stackoverflow.com/a/69997732/16027098 | source}
+ */
+type Invalid<T> = Error & { __errorMessage: T };
+
+/**
+ * @see {@link https://stackoverflow.com/a/69997732/16027098 | source}
+ */
+type AsUniqueArray<
+  A extends ReadonlyArray<any>,
+  B extends ReadonlyArray<any>,
+> = {
+  [I in keyof A]: unknown extends {
+    [J in keyof B]: J extends I ? never : B[J] extends A[I] ? unknown : never
+  }[number]
+    ? Invalid<[A[I], "is repeated"]>
+    : A[I]
+};
+
+/**
+ * @see {@link https://stackoverflow.com/a/69997732/16027098 | source}
+ */
+export type Narrowable =
+  | string
+  | number
+  | boolean
+  | object
+  | null
+  | undefined
+  | symbol;
+
+/**
+ * @example
+ * const keys = asUniqueArray(["a", "b"]); // ok
+ * const catch_duplicate = asUniqueArray(["a", "b", "b"]); // error
+ *
+ * @see {@link https://stackoverflow.com/a/69997732/16027098 | source}
+ */
+export const asUniqueArray = <
+  N extends Narrowable,
+  A extends [] | ReadonlyArray<N> & AsUniqueArray<A, A>
+>(
+ a: A
+) => a;
+
+/**
+ * @example
+ * type A = {
+ *   a: number;
+ *   b: number;
+ *   c: number
+ * }
+ *
+ * const keys = asKeysOfObject<A, ["a", "b"]>(["a", "b"]); // ok
+ * const catch_duplicate = asKeysOfObject<A, ["a", "b", "b"]>(["a", "b", "b"]); // error
+ * const catch_non_object_key = asKeysOfObject<A, ["d"]>(["d"]); // error
+ *
+ * @see {@link asUniqueArray}
+ */
+export const asKeysOfObject = <
+  O extends {},
+  A extends [] | ReadonlyArray<Narrowable> & ReadonlyArray<keyof O> & AsUniqueArray<A, A>
+>(
+ a: A
+) => a;
