@@ -313,6 +313,85 @@ export function knexMySqlInsertOrUpdate<
   );
 };
 
+export type KnexDefaultResetTablesOption<T extends Knex.TableNames = Knex.TableNames> = {
+  [N in T]: boolean
+};
+
+export type KnexResetTablesOption<T extends Knex.TableNames = Knex.TableNames> = {
+  [N in T]: true;
+};
+
+export type KnexResetTablesResult<T extends Knex.TableNames = Knex.TableNames> = {
+  [TableName in T]: number;
+};
+
+export type KnexResetTablesAdvanceOption<T extends Knex.TableNames = Knex.TableNames> = {
+  strategy: "only" | "except",
+  tables: Partial<KnexResetTablesOption<T>>,
+};
+
+/**
+ * Delete all rows of {@link table}.
+ */
+export async function knexResetTable<T extends Knex.TableNames = Knex.TableNames>(knex: Knex, table: T): Promise<number> {
+  const result = await knexResetTables<T>(knex, [table]);
+  return result[table];
+};
+
+/**
+ * Delete all rows of {@link tables} in order.
+ */
+export async function knexResetTables<T extends Knex.TableNames = Knex.TableNames>(knex: Knex, tables: T[]): Promise<KnexResetTablesResult> {
+  const result = tables.reduce(function(acc, cur, _i) {
+    acc[cur] = 0;
+    return acc;
+  }, {} as KnexResetTablesResult<T>);
+
+  for(const table of tables) {
+    const affected = await knex(table).delete();
+    result[table] = affected;
+  }
+  return result;
+};
+
+/**
+ * Delete all rows of tables based on the {@link tables} and {@link option}.
+ *
+ * If the strategy is `only` or no strategy is provided (undefined), the tables with the `true` option will be chosen.
+ * Otherwise (except), the tables with the `false` option will be chosen.
+ *
+ * The deletion will follow the order of `keyof` {@link tables}.
+ *
+ * This operation is considered DANGEROUS and should not exist in production code.
+ * USE AT YOUR OWN RISK.
+ *
+ * @example
+ * // All defaults set to `false` are recommended
+ * const DEFAULT_OPTION = {
+ *   users: false,
+ *   roles: false,
+ *   user_role: false,
+ * };
+ * await knexResetTablesAdvance(knex, DEFAULT_OPTION); // No rows deleted
+ * await knexResetTablesAdvance(knex, DEFAULT_OPTION, { strategy: "only", tables: { user_role: true } }); // Only delete rows from the user_role table
+ * await knexResetTablesAdvance(knex, DEFAULT_OPTION, { strategy: "except", tables: { users: true } }); // Keep rows in the users table, delete others.
+ * await knexResetTablesAdvance(knex, DEFAULT_OPTION, { strategy: "except", tables: {} }); // Delete rows from all tables.
+ */
+export async function knexResetTablesAdvance(knex: Knex, tables: KnexDefaultResetTablesOption, option?: KnexResetTablesAdvanceOption): Promise<KnexResetTablesResult> {
+  const opt = { ...tables, ...option?.tables };
+  const chosen = (Object.keys(opt) as Array<keyof KnexDefaultResetTablesOption>).filter((v) => {
+    switch (option?.strategy) {
+      case "only":
+      case undefined:
+        return opt[v] === true;
+
+      case "except":
+        return opt[v] === false;
+    }
+  });
+  return await knexResetTables(knex, chosen);
+};
+
 declare module 'knex' {
   namespace Knex {
     interface JoinClause {
