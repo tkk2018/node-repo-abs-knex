@@ -245,9 +245,19 @@ export function knexRawStrDateTimeToUnixtimestamp<
 };
 
 export function safeColumnName<
+  TTable extends Knex.TableNames,
+  TKey extends TableColumnName<TTable> = TableColumnName<TTable>,
+>(column_name: `${TTable}.${TKey}`): `${TTable}.${TKey}`;
+
+export function safeColumnName<
   TTable extends string,
   TRecord extends {},
   TKey extends StrKey<TRecord> = StrKey<TRecord>,
+>(column_name: `${TTable}.${TKey}`): `${TTable}.${TKey}`;
+
+export function safeColumnName<
+  TTable extends string,
+  TKey extends string,
 >(column_name: `${TTable}.${TKey}`): `${TTable}.${TKey}` {
   return column_name;
 };
