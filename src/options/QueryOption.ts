@@ -1,12 +1,12 @@
 import { Knex } from "knex";
 
-export interface QueryOption {
+export interface QueryOption<TRecord extends {} = any, TResult = any[]> {
   /**
    * The dbreadonly instance will used if this is true.
    */
   readonly?: boolean | null;
 
-  trx?: Knex.Transaction | null;
+  trx?: Knex.Transaction<TRecord, TResult> | null;
 };
 
 export interface BaseSelectOption<T = any> {
@@ -22,11 +22,11 @@ export interface BaseSelectOption<T = any> {
 
 export interface SelectOption<T = any> extends BaseSelectOption<T>, QueryOption {};
 
-export type DeleteOption = Pick<QueryOption, "trx"> & { readonly?: never };
+export type DeleteOption<TRecord extends {} = any, TResult = any[]> = Pick<QueryOption<TRecord, TResult>, "trx"> & { readonly?: never };
 
-export type InsertOption = Pick<QueryOption, "trx"> & { readonly?: never };
+export type InsertOption<TRecord extends {} = any, TResult = any[]> = Pick<QueryOption<TRecord, TResult>, "trx"> & { readonly?: never };
 
-export type UpdateOption = Pick<QueryOption, "trx"> & { readonly?: never };
+export type UpdateOption<TRecord extends {} = any, TResult = any[]> = Pick<QueryOption<TRecord, TResult>, "trx"> & { readonly?: never };
 
 export function createSelectForUpdateOption(trx: Knex.Transaction): SelectOption {
   return {

@@ -453,3 +453,5 @@ export interface KnexGenericConfig<Driver extends string, SV extends {} = any> e
   client: Driver;
   pool: KnexGenericPoolConfig<Driver>;
 };
+
+export type AnyQueryBuilder<T extends {} = {}, U = any[]> = Knex<T, U> | Knex.QueryBuilder<T, U>;

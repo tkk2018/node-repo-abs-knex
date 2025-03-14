@@ -544,3 +544,62 @@ export const asKeysOfObject = <
 >(
  a: A
 ) => a;
+
+export function isUndefined(value: unknown): value is undefined {
+  return typeof value === "undefined";
+};
+
+export function isNull(value: unknown): value is null {
+  return value === null;
+};
+
+/**
+ * https://stackoverflow.com/a/9436948/16027098
+ */
+export function isString(param: unknown): param is string {
+  return (typeof param === "string" || param instanceof String);
+};
+
+export function isBoolean(param: unknown): param is boolean {
+  return typeof param == "boolean";
+};
+
+declare module "date-fns" {
+  function isDate(value: any): value is Date;
+};
+
+export function isIncluded<T extends ReadonlyArray<unknown>>(list: T, item: unknown): item is T[number] {
+  return list.includes(item);
+};
+
+export function existsInSet<T>(set: Set<T>, item: unknown): item is T {
+  return set.has(item as any);
+};
+
+export type JsValueType = boolean | number | string | Uint8Array | Buffer | Date;
+export type JsToDatabaseTypeOption = {
+  /** Default to true */ utcDate?: boolean;
+};
+export function jsToDatabaseType(
+  value: JsValueType,
+  option?: JsToDatabaseTypeOption,
+): string | number | Buffer {
+  if (isDate(value)) {
+    return formatISO9075(value, option?.utcDate ?? true);
+  }
+
+  if (isBoolean(value)) {
+    return value ? 1 : 0;
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return Buffer.from(value);
+  }
+
+  // string | number | buffer
+  return value;
+};
+
+export function isKeyOf<T>(o: T, key: PropertyKey): key is keyof T {
+  return Object.prototype.hasOwnProperty.call(o, key);
+};
