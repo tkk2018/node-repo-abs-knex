@@ -603,3 +603,94 @@ export function jsToDatabaseType(
 export function isKeyOf<T>(o: T, key: PropertyKey): key is keyof T {
   return Object.prototype.hasOwnProperty.call(o, key);
 };
+
+/**
+ * Database to object functions
+ */
+export type DTOFn<D extends Record<string, any>, O extends Record<string, any>> = {
+  [K in keyof O]: K extends keyof D
+    ? (value: D[K], key: K) => O[K]
+    : never
+    ;
+};
+
+type DTOFnOutput<Input extends Record<string, any>, O extends Record<string, any>> = {
+  [K in keyof O | keyof Input]:  K extends keyof DTOFn<Input, O>
+    ? ReturnType<DTOFn<Input, O>[K]>
+    : K extends keyof O
+      ? O[K]
+      : never
+      ;
+};
+
+type SetNonOptional<T> = {
+  [K in keyof T]-? : T[K];
+};
+
+/**
+ * Object to database function
+ */
+export type OTDFn<O extends Record<string, any>, D extends Record<string, any>> = {
+  [K in keyof D]: K extends keyof O
+    ? O[K] extends undefined
+      ? never
+      : (value: O[K], key: K) => D[K]
+    : never;
+};
+
+type OTDFnOutput<Input extends Record<string, any>, D extends Record<string, any>> = {
+  [K in keyof Input]: K extends keyof OTDFn<Input, D>
+    ? ReturnType<OTDFn<Input, D>[K]>
+    : never
+    ;
+};
+
+/**
+ * Convert the object value to database value.
+ * Remove the properties where the value is undefiend.
+ *
+ * FIXME: If the Input contains undefined properties, they will be output as 'any'.
+ *        They should be marked as 'optional', and if their existence is verified, they should resolve to the converted type.
+ */
+export function toDatabase<
+  Input extends Record<string, any>,
+  D extends Record<string, any>,
+>(o: Input, fn: OTDFn<SetNonOptional<Input>, D>): OTDFnOutput<SetNonOptional<Input>, D> {
+  return Object.entries(o).reduce((d, [_key, val]) => {
+    if (isUndefined(val)) return d; // filter if the value is undefined.
+
+    const key = _key as keyof Input & string;
+    if (!isKeyOf(fn, key)) {
+      throw new Error(`The conversion function for ${key} is not defined.`);
+    }
+
+    // convert
+    d[key] = fn[key](val, key);
+    return d;
+  }, {} as OTDFnOutput<SetNonOptional<Input>, D>);
+}
+
+/**
+ * Convert the database value to object value.
+ * Directly assign properties where the conversion function not found.
+ */
+export function fromDatabase<
+  Input extends Record<string, any>,
+  O extends Record<string, any>,
+>(d: Input, fn: DTOFn<Input, O>): DTOFnOutput<Input, O> {
+  return (Object.keys(d) as Array<keyof Input>).reduce((o, key) => {
+    if (!isKeyOf(fn, key)) {
+      // The conversion function for key is not defined.
+      // Just return the raw value.
+      const k = key as keyof Input;
+      o[k] = d[k];
+    }
+    else {
+      const k = key as keyof O & keyof Input;
+      const val = d[k];
+      o[k] = fn[k](val, k as never); // TODO: FIXME
+    }
+
+    return o;
+  }, {} as DTOFnOutput<Input, O>);
+}
