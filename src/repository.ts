@@ -66,6 +66,7 @@ export abstract class Repository<
 
   /**
    * Cursor-based pagination. By default, this will return `${page_size + 1}` of data.
+   * If the page_size is less than or equal to 0, it will be treated as undefined, which will result in returning all.
    *
    * @param table The name of table.
    * @param id_column The primary column name.
@@ -93,8 +94,8 @@ export abstract class Repository<
     id_column: Extract<keyof T, string>,
     opt?: SelectOption & CPaginationOption & { disablePrependTableName?: boolean; disablePageSizePlusOne?: boolean },
   ): Knex.QueryBuilder<T, V> {
-    const page_size = opt?.page_size ? opt.page_size > 0 ? opt.page_size : 0 : undefined;
-    const order = opt?.order === "desc" ? "desc" : "asc"; // default asc
+    const page_size = (opt?.page_size && opt.page_size > 0) ? opt.page_size : 0;
+    const order = "desc" === opt?.order ? "desc" : "asc"; // default asc
 
     let comparator = "";
     let cursor: string | Knex.QueryBuilder | undefined | null = opt?.start_id;
