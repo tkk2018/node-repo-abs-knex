@@ -65,6 +65,13 @@ export abstract class Repository<
   }
 
   /**
+   * WARNING: LIMITATION OF THIS FUNCTION\
+   * This function adds a cursor (`WHERE > ...`) and an `ORDER BY` clause based on the `id column` and its value.
+   * The `id column` is a required field, but its value is optional (@param opt.start_id).
+   * If the value is not provided, it defaults to 1 (as an integer).
+   * This can cause an issue when the value of `id column` cannot coerce to a string or integer,
+   * such as when it's a datetime column, resulting in an invalid format error.
+   *
    * Cursor-based pagination. By default, this will return `${page_size + 1}` of data.
    * If the page_size is less than or equal to 0, it will be treated as undefined, which will result in returning all.
    *

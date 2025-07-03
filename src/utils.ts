@@ -581,9 +581,9 @@ export type JsToDatabaseTypeOption = {
   /** Default to true */ utcDate?: boolean;
 };
 export function jsToDatabaseType(
-  value: JsValueType,
+  value: JsValueType | Array<JsValueType>,
   option?: JsToDatabaseTypeOption,
-): string | number | Buffer {
+): string | number | Buffer | Array<string | number | Buffer> {
   if (isDate(value)) {
     return formatISO9075(value, option?.utcDate ?? true);
   }
@@ -596,7 +596,11 @@ export function jsToDatabaseType(
     return Buffer.from(value);
   }
 
-  // string | number | buffer
+  if (Array.isArray(value)) {
+    return value.map((v) => jsToDatabaseType(v)) as Array<string | number | Buffer>;
+  }
+
+  // string | number | buffer | Array<string | number | buffer>
   return value;
 };
 
