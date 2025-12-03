@@ -572,6 +572,16 @@ export function isIncluded<T extends ReadonlyArray<unknown>>(list: T, item: unkn
   return list.includes(item);
 };
 
+/**
+ * https://stackoverflow.com/a/52869830/16027098
+ * @param str
+ */
+export function isIsoDate(str: string): boolean {
+  if (!/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/.test(str)) return false;
+  const d = new Date(str);
+  return !isNaN(d.getTime()) && d.toISOString()===str; // valid date
+}
+
 export function existsInSet<T>(set: Set<T>, item: unknown): item is T {
   return set.has(item as any);
 };
@@ -579,6 +589,7 @@ export function existsInSet<T>(set: Set<T>, item: unknown): item is T {
 export type JsValueType = boolean | number | string | Uint8Array | Buffer | Date;
 export type JsToDatabaseTypeOption = {
   /** Default to true */ utcDate?: boolean;
+  /** Default to false */ convertIso8601ToIso9075?: boolean;
 };
 export function jsToDatabaseType(
   value: JsValueType | Array<JsValueType>,
@@ -598,6 +609,10 @@ export function jsToDatabaseType(
 
   if (Array.isArray(value)) {
     return value.map((v) => jsToDatabaseType(v)) as Array<string | number | Buffer>;
+  }
+
+  if (option?.convertIso8601ToIso9075 && isString(value) && isIsoDate(value)) {
+    return formatISO9075(new Date(value), option?.utcDate ?? true);
   }
 
   // string | number | buffer | Array<string | number | buffer>
