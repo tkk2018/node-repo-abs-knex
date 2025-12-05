@@ -65,35 +65,66 @@ export abstract class Repository<
   }
 
   /**
-   * WARNING: LIMITATION OF THIS FUNCTION\
-   * This function adds a cursor (`WHERE > ...`) and an `ORDER BY` clause based on the `id column` and its value.
-   * The `id column` is a required field, but its value is optional (@param opt.start_id).
-   * If the value is not provided, it defaults to 1 (as an integer).
-   * This can cause an issue when the value of `id column` cannot coerce to a string or integer,
-   * such as when it's a datetime column, resulting in an invalid format error.
+   * [WARN] LIMITATION: The `id_column` is required, but its value (`opt.start_id`) is optional.
+   * If no value is provided, it defaults to 1 (integer).
+   * This can cause issues if the `id_column` cannot be coerced to a string or integer (e.g., when it is a datetime column),
+   * resulting in an invalid format error.
    *
-   * Cursor-based pagination. By default, this will return `${page_size + 1}` of data.
-   * If the page_size is less than or equal to 0, it will be treated as undefined, which will result in returning all.
+   * Cursor-based pagination: by default, this will return `${page_size + 1}` rows.
+   * If `page_size` is less than or equal to 0, it will be treated as undefined, which results in returning all rows.
    *
-   * @param table The name of table.
-   * @param id_column The primary column name.
-   * @param opt The option for query.
+   * This applies a cursor condition depending on the sort order:
+   * * `asc` - `WHERE id_column >= start_id`
+   * * `desc` - `WHERE id_column <= start_id`
+   *
+   * Also, this adds `ORDER BY` clause. If the (`opt.order_by`) is not specified, it defaults to using the {@param id_column}
+   *
+   * @param table The name of the table.
+   * @param id_column The column used as the cursor for pagination.
+   * @param opt Options for the query.
+   *
    * @example
-   * // the very first time
-   * const r1 = await qbCPaginate("users", "user_id", {
+   * // First page (ascending order with date filter)
+   * const page1 = await qbCPaginate("users", "created_at", {
+   *   order: "asc",
+   *   page_size: 10,
+   *   start_id: "2025-01-01 00:00:00",
+   * })
+   * // this returns a QueryBuilder, so you can continue chaining
+   * .andWhere("created_at", "<", "2026-01-01 00:00:00")
+   * ;
+   *
+   * if (page1.length > 10) {
+   *   // There is a next page
+   *   // Reapply the original filters, but update the cursor (start_id)
+   *   const remaining_page = await qbCPaginate("users", "created_at", {
+   *     order: "asc",
+   *     page_size: 10,
+   *     start_id: page1[page1.length - 1].created_at,
+   *   })
+   *   .andWhere("created_at", "<", "2026-01-01 00:00:00")
+   *   ;
+   * }
+   *
+   * @example
+   * // First page (descending order)
+   * const page1 = await qbCPaginate("users", "user_id", {
    *   order: "desc",
    *   page_size: 10,
-   * });
+   * })
+   * .select("user_id", "name")
+   * ;
    *
-   * if (r1.length > 10) {
-   *   // has next, subsequence
-   *   const r2 = await qbCPaginate("users", "user_id", {
+   * if (page1.length > 10) {
+   *   // There is a next page
+   *   const remaining_page = await qbCPaginate("users", "user_id", {
    *     order: "desc",
    *     page_size: 10,
-   *     start_id: r1[r1.length - 1].user_id,
+   *     // use the last element in the list (smallest user_id) because the results are ordered in descending order
+   *     start_id: page1[page1.length - 1].user_id,
    *   })
-   *   // can continue build the query
-   *     .select("user_id", "name");
+   *   .select("user_id", "name")
+   *   ;
    * }
    */
   protected qbCPaginate<T extends {} = TRecord, V = TResult>(
