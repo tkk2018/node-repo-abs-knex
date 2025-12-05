@@ -118,11 +118,14 @@ export abstract class Repository<
 
     return this.qb<T, V>(table, opt)
       .where(opt?.disablePrependTableName ? id_column : this.prependTableName(table, id_column), comparator, cursor)
-      .orderBy(opt?.disablePrependTableName ? order_by : this.prependTableName(table, order_by), order)
       .modify((qb) => {
         if (page_size) {
           const extra = opt?.disablePageSizePlusOne ? 0 : 1;
           qb.limit(page_size + extra);
+        }
+
+        if (!opt?.order_by || !opt?.order) {
+          qb.orderBy(opt?.disablePrependTableName ? order_by : this.prependTableName(table, order_by), order);
         }
       });
   }
