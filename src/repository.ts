@@ -103,6 +103,7 @@ export abstract class Repository<
   ): Knex.QueryBuilder<T, V> {
     const page_size = (opt?.page_size && opt.page_size > 0) ? opt.page_size : 0;
     const order = "desc" === opt?.order ? "desc" : "asc"; // default asc
+    const order_by = opt?.order_by ?? id_column; // default to id_column
 
     let comparator = "";
     let cursor: string | Knex.QueryBuilder | undefined | null = opt?.start_id;
@@ -117,7 +118,7 @@ export abstract class Repository<
 
     return this.qb<T, V>(table, opt)
       .where(opt?.disablePrependTableName ? id_column : this.prependTableName(table, id_column), comparator, cursor)
-      .orderBy(opt?.disablePrependTableName ? id_column : this.prependTableName(table, id_column), order)
+      .orderBy(opt?.disablePrependTableName ? order_by : this.prependTableName(table, order_by), order)
       .modify((qb) => {
         if (page_size) {
           const extra = opt?.disablePageSizePlusOne ? 0 : 1;
