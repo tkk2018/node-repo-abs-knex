@@ -18,9 +18,22 @@ export interface BaseSelectOption<T = any> {
   order?: "asc" | "desc" | null;
 
   order_by?: Extract<keyof T, string> | null;
-}
+};
+
+export interface BaseSelectOption2<T extends string = string> {
+  /**
+   * SELECT * FROM table FOR UPDATE;
+   */
+  for_update?: boolean | null;
+
+  order?: "asc" | "desc" | null;
+
+  order_by?: T | null;
+};
 
 export interface SelectOption<T = any> extends BaseSelectOption<T>, QueryOption {};
+
+export interface SelectOption2<T extends {} = any, V = any[], O extends string = Extract<keyof T, string>> extends BaseSelectOption2<O>, QueryOption<T, V> {};
 
 export type DeleteOption<TRecord extends {} = any, TResult = any[]> = Pick<QueryOption<TRecord, TResult>, "trx"> & { readonly?: never };
 

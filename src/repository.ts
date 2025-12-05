@@ -1,8 +1,11 @@
 import { Knex } from "knex";
 import {
   CPaginationOption,
+  ICursorPaginationOption,
+  IOffsetPaginationOption,
   QueryOption,
   SelectOption,
+  SelectOption2,
 } from "./index.js";
 
 export interface RepositoryConstructorParams<TRecord extends {} = any, TResult = any[]> {
@@ -31,6 +34,7 @@ export abstract class Repository<
     return opt?.readonly ? this.dbreadonly : this.dbmain;
   }
 
+  protected qb<T extends {} = TRecord, V = TResult>(table: TTable, opt?: SelectOption2<T, V> & { disablePrependTableName?: boolean }): Knex.QueryBuilder<T, V>;
   protected qb<
     TTable extends Knex.TableNames,
     TRecord extends Knex.ResolveTableType<Knex.TableType<TTable>> = Knex.ResolveTableType<Knex.TableType<TTable>>,
@@ -58,10 +62,31 @@ export abstract class Repository<
     table: TTable,
     column: Extract<keyof T, string>,
     opt?: SelectOption & { disablePrependTableName?: boolean },
+  ): Knex.QueryBuilder<T, { max: V }>;
+  qbMax<T extends {} = TRecord, V = any>(
+    table: TTable,
+    column: Extract<keyof T, string>,
+    opt?: SelectOption2<T, V> & { disablePrependTableName?: boolean },
+  ): Knex.QueryBuilder<T, { max: V }>;
+  qbMax<T extends {} = TRecord, V = any>(
+    table: TTable,
+    column: Extract<keyof T, string>,
+    opt?: SelectOption2<T, V> & { disablePrependTableName?: boolean },
   ): Knex.QueryBuilder<T, { max: V }> {
-    return this.qb<T>(table, opt)
+    return this.qb<T, V>(table, opt)
       .max(opt?.disablePrependTableName ? column: this.prependTableName(table, column), { as: "max" })
       .first() as Knex.QueryBuilder<T, { max: V }>; // FIXME: type cast
+  }
+
+  qbMin<T extends {} = TRecord, V = any>(
+    table: TTable,
+    column: Extract<keyof T, string>,
+    opt?: SelectOption2<T, V> & { disablePrependTableName?: boolean },
+  ): Knex.QueryBuilder<T, { min: V }> {
+    return this.qb<T, V>(table, opt)
+      .min(
+        opt?.disablePrependTableName ? column : this.prependTableName(table, column), { as: "min" })
+      .first() as Knex.QueryBuilder<T, { min: V }>; // FIXME: type cast
   }
 
   /**
@@ -160,4 +185,54 @@ export abstract class Repository<
         }
       });
   }
+
+  protected qbPaginate<T extends {} = TRecord, V = TResult>(table: TTable, option?: AnyPaginationOption<T, V>): Knex.QueryBuilder<T, V>;
+  protected qbPaginate<T extends {} = TRecord, V = TResult>(table: TTable, option?: AnyPaginationOption<T, V>): Knex.QueryBuilder<T, V> {
+    const opt = Object.assign({}, option);
+    return this.qb<T, V>(table, opt)
+      .modify((qb) => {
+        // cursor
+        if (opt?.order && "cursor_column" in opt && opt.cursor_column && opt?.cursor_comparator) {
+          let cursor_value = opt?.cursor_value;
+          if (!cursor_value) {
+            if (opt?.order === "asc") {
+              cursor_value ??= this.qbMin<T, any>(table, opt.cursor_column, opt); // subquery to find the first
+            }
+            else {
+              cursor_value ??= this.qbMax<T, any>(table, opt.cursor_column, opt); // subquery to find the last
+            }
+          }
+
+          qb.where(
+            opt?.disablePrependTableName
+            ? opt.cursor_column
+            : this.prependTableName(table, opt.cursor_column), opt.cursor_comparator, cursor_value
+          )
+        }
+
+        if ("page_size" in opt && opt?.page_size) {
+          const extra = opt?.disablePageSizePlusOne ? 0 : 1;
+          qb.limit(opt.page_size + extra);
+
+          // offset
+          if ("offset" in opt && opt.offset) {
+            qb.offset(opt.offset);
+          }
+        }
+
+        return qb;
+      });
+  }
 };
+
+type ExtraSelectOption = {
+  disablePrependTableName?: boolean;
+};
+
+export type ExtraPaginationOption = ExtraSelectOption & {
+  disablePageSizePlusOne?: boolean;
+};
+
+export type AnyPaginationOption<T extends {} = any, V = any[]> =
+  (Partial<ICursorPaginationOption<T, V>> | Partial<IOffsetPaginationOption<T, V>> | SelectOption2<T, V>)
+  & ExtraPaginationOption;
